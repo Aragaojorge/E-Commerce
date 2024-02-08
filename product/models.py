@@ -1,4 +1,7 @@
 from django.db import models
+from PIL import Image
+import os
+from django.conf import settings
 
 # Create your models here.
 class Product(models.Model):
@@ -13,7 +16,23 @@ class Product(models.Model):
     
     @staticmethod
     def resize_image(img, new_width=800):
-        print(img.name)
+        img_full_path = os.path.join(settings.MEDIA_ROOT, img.name)
+        img_pil = Image.open(img_full_path)
+        original_width, original_height = img_pil.size
+        
+        if original_width <= new_width:
+            img_pil.close()
+            return
+        
+        new_height = round((new_width * original_height) / original_width)
+        
+        new_img = img_pil.resize((new_width, new_height), Image.LANCZOS)
+        
+        new_img.save(
+            img_full_path,
+            optimize=True,
+            quality = 50
+        )
         
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -25,3 +44,13 @@ class Product(models.Model):
     
     def __str__(self):
         return self.name
+    
+class Option(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50, blank=True, null=True)
+    price = models.FloatField()
+    price_promotional = models.FloatField(default=0)
+    stock = models.PositiveIntegerField(default=1)
+    
+    def __str__(self):
+        return self.name or self.product.name
