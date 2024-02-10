@@ -7,6 +7,7 @@ class OptionInLine(admin.TabularInline):
     extra = 1
     
 class ProductAdmin(admin.ModelAdmin):
+    list_display = ['name', 'short_description', 'get_price_formatted', 'get_price_promotional_formatted']
     inlines = [
         OptionInLine
     ]
