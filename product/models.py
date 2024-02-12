@@ -3,6 +3,7 @@ from PIL import Image
 import os
 from django.conf import settings
 from django.utils.text import slugify
+from utils import utils
 
 # Create your models here.
 class Product(models.Model):
@@ -16,12 +17,12 @@ class Product(models.Model):
     type = models.CharField(default='V', max_length=1, choices=(('V', 'Variable'), ('S', 'Simple'),))
     
     def get_price_formatted(self):
-        return f'US$ {self.price_marketing:.2f}'.replace('.', ',')
+        return utils.format_price(self.price_marketing)
 
     get_price_formatted.short_description = 'Price'
     
     def get_price_promotional_formatted(self):
-        return f'US$ {self.price_marketing_promotional:.2f}'.replace('.', ',')
+        return utils.format_price(self.price_marketing_promotional)
 
     get_price_promotional_formatted.short_description = 'Promotional'
     
