@@ -76,7 +76,7 @@ class AddToCart(View):
             if variation_stock < amount_cart:
                 messages.warning(
                     self.request,
-                    f'Insufficient stock for {amount_cart}x the product "{product_name}". Added {variation_stock}x to your cart!'
+                    f'Insufficient stock for {amount_cart}x for the product "{product_name}". Added {variation_stock}x to your cart!'
                 )
                 
                 amount_cart = variation_stock
@@ -112,11 +112,40 @@ class AddToCart(View):
         
 
 class RemoveFromCart(View):
-    pass
+    def get(self, *args, **kwargs):
+        http_referer = self.request.META.get(
+            'HTTP_REFERER',
+            reverse('product:list')
+        )
+        variation_id = self.request.GET.get('vid')
+        
+        if not variation_id:
+            return redirect(http_referer)
+        
+        if not self.request.session.get('cart'):
+            return redirect(http_referer)
+        
+        if variation_id not in self.request.session['cart']:
+            return redirect(http_referer)
+        
+        cart = self.request.session['cart'][variation_id]
+        
+        messages.success(
+            self.request,
+            f'Product {cart["product_name"]} {cart["variation_name"]} removed from your cart!'
+        )
+        
+        del self.request.session['cart'][variation_id]
+        self.request.session.save()
+        
+        return redirect(http_referer)
 
 class Cart(View):
     def get(self, *args, **kwargs):
-        return render(self.request, 'product/cart.html')
+        context = {
+            'cart': self.request.session.get('cart', {})
+        }
+        return render(self.request, 'product/cart.html', context)
 
 class Finalize(View):
     pass
