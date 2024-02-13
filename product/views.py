@@ -12,7 +12,7 @@ class ProductsList(ListView):
     model = models.Product
     template_name = 'product/list.html'
     context_object_name = 'products'
-    paginate_by = 1
+    paginate_by = 9
 
 class ProductDetail(DetailView):
     model = models.Product
