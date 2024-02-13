@@ -5,6 +5,7 @@ from django.views import View
 from django.http import HttpResponse
 from . import models
 from django.contrib import messages
+from pprint import pprint
 
 # Create your views here.
 class ProductsList(ListView):
@@ -21,37 +22,101 @@ class ProductDetail(DetailView):
 
 class AddToCart(View):
     def get(self, *args, **kwargs):
+        # del cart when needed
+        # if self.request.session.get('cart'):
+        #     del self.request.session['cart']
+        #     self.request.session.save()
+            
         http_referer = self.request.META.get('HTTP_REFERER', reverse('product:list'))
-        id_variation = self.request.GET.get('vid')
+        variation_id = self.request.GET.get('vid')
         
-        if not id_variation:
+        if not variation_id:
             messages.error(
                 self.request,
                 'This product does not exist!'
             )
             return redirect(http_referer)
         
-        variation = get_object_or_404(models.Option, id=id_variation)
+        variation = get_object_or_404(models.Option, id=variation_id)
+        variation_stock = variation.stock
+        product = variation.product
         
+        product_id = product.id
+        product_name = product.name
+        variation_name = variation.name or ''
+        price_unitary = variation.price
+        price_unitary_promotional = variation.price_promotional
+        amount = 1
+        slug = product.slug
+        image =product.image
+        
+        if image:
+            image = image.name
+        else:
+            image =''
+        
+        if variation.stock < 1:
+            messages.error(
+                self.request,
+                'Insufficient stock'
+            )
+            return redirect(http_referer)
+                    
         if not self.request.session.get('cart'):
             self.request.session['cart'] = {}
             self.request.session.save()
             
         cart = self.request.session['cart']
         
-        if id_variation in cart:
-            ...
+        if variation_id in cart:
+            
+            amount_cart = cart[variation_id]['amount']
+            amount_cart += 1
+            
+            if variation_stock < amount_cart:
+                messages.warning(
+                    self.request,
+                    f'Insufficient stock for {amount_cart}x the product "{product_name}". Added {variation_stock}x to your cart!'
+                )
+                
+                amount_cart = variation_stock
+                
+            cart[variation_id]['amount'] = amount_cart
+            cart[variation_id]['price_quantitave'] = price_unitary * amount_cart
+            cart[variation_id]['price_quantitave_promotional'] = price_unitary_promotional * amount_cart
+                
         else:
-            ...
+            
+            cart[variation_id] = {
+                'product_id': product_id,
+                'product_name': product_name,
+                'variation_name': variation_name,
+                'variation_id': variation_id,
+                'price_unitary': price_unitary,
+                'price_unitary_promotional': price_unitary_promotional,
+                'price_quantitative': price_unitary,
+                'price_quantitative_promotional': price_unitary_promotional,
+                'amount': 1,
+                'slug': slug,
+                'image': image,
+            }
+            
+        self.request.session.save()
         
-        return HttpResponse('Add to cart')
+        messages.success(
+            self.request,
+            f"Product {product_name} {variation_name} added to you cart {cart[variation_id]['amount']}x."
+        )
+        
+        return redirect(http_referer)
         
 
 class RemoveFromCart(View):
     pass
 
 class Cart(View):
-    pass
+    def get(self, *args, **kwargs):
+        return render(self.request, 'product/cart.html')
 
 class Finalize(View):
     pass
