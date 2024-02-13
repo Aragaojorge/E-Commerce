@@ -35,11 +35,28 @@
                     <div class="form-group">
                         <select id="select-variacoes" name="vid" class="form-control form-control-lg">
                             {% for option in product.option_set.all  %}
-                                <option 
-                                    data-preco="{{ option.price|format_price }}" 
-                                    data-preco-promocional="{{ option.price_promotional|format_price }}" 
-                                    value="{{ option.id }}">{{ option }}
-                                </option>
+                                {% if option.price_promotional %}
+                                    <option 
+                                        data-preco="{{ option.price|format_price }}" 
+                                        data-preco-promocional="{{ option.price_promotional|format_price }}" 
+                                        value="{{ option.id }}">
+                                        {% if option.name %}
+                                            {{ option.name }}
+                                        {% else %}
+                                            {{ option.name }}
+                                        {% endif %}
+                                        {{ option }}
+                                    </option>
+                                    {% else %}
+                                        <option data-preco="{{ option.price|format_price }}" value="{{ option.id }}">
+                                            {% if option.name %}
+                                                {{ option.name }}
+                                            {% else %}
+                                                {{ option.name }}
+                                            {% endif %}
+                                            {{ option }}
+                                        </option>                                
+                                    {% endif %}
                             {% endfor %}
                         </select>
                     </div>
