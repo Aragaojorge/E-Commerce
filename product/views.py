@@ -147,5 +147,5 @@ class Cart(View):
         }
         return render(self.request, 'product/cart.html', context)
 
-class Finalize(View):
+class PurchaseSummary(View):
     pass
