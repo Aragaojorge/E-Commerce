@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from . import models
 from django.contrib import messages
 from pprint import pprint
+from user.models import User
 
 # Create your views here.
 class ProductsList(ListView):
@@ -152,6 +153,22 @@ class PurchaseSummary(View):
         
         if not self.request.user.is_authenticated:
             return redirect('user:create')
+        
+        user = User.objects.filter(user=self.request.user).exists()
+        
+        if not user:
+            messages.error(
+                self.request,
+                'User has no profile.'
+            )
+            redirect('user:create')
+        
+        if not self.request.session.get('cart'):
+            messages.error(
+                self.request,
+                'Your cart is empty.'
+            )
+            redirect('product:list')
         
         context = {
             'user': self.request.user,
