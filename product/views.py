@@ -148,4 +148,14 @@ class Cart(View):
         return render(self.request, 'product/cart.html', context)
 
 class PurchaseSummary(View):
-    pass
+    def get(self, *args, **kwargs):
+        
+        if not self.request.user.is_authenticated:
+            return redirect('user:create')
+        
+        context = {
+            'user': self.request.user,
+            'cart': self.request.session['cart']
+        }
+        
+        return render(self.request, 'product/purchasesummary.html', context) 

@@ -51,6 +51,10 @@ class Create(BaseProfile):
     def post(self, *args, **kwargs):
         
         if not self.userform.is_valid() or not self.profileform.is_valid():
+            messages.error(
+                self.request,
+                'There are errors in your registration form. Please check if all fields are filled in correctly.'
+            )
             return self.renderize
         
         username = self.userform.cleaned_data.get('username')
@@ -117,11 +121,12 @@ class Create(BaseProfile):
             'You are logged in and you can finalize your purchase!'
         )
         
-        return redirect('user:create')
+        return redirect('product:cart')
         return self.renderize
 
 class Update(View):
-    pass
+    def get(self, *args, **kwargs):
+        return HttpResponse('Update')
 
 class Login(View):
     def post(self, *args, **kwargs):
