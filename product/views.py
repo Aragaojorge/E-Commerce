@@ -161,18 +161,18 @@ class PurchaseSummary(View):
                 self.request,
                 'User has no profile.'
             )
-            redirect('user:create')
+            return redirect('user:create')
         
         if not self.request.session.get('cart'):
             messages.error(
                 self.request,
                 'Your cart is empty.'
             )
-            redirect('product:list')
-        
+            return redirect('product:list')
+                    
         context = {
             'user': self.request.user,
             'cart': self.request.session['cart']
         }
-        
+                
         return render(self.request, 'product/purchasesummary.html', context) 
