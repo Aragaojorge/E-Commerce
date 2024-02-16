@@ -1,9 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView
 from django.views import View
 from django.http import HttpResponse
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 import copy
 
 from . import models
@@ -103,17 +104,64 @@ class Create(BaseProfile):
             if authenticaty:
                 login(self.request, user=user)
             
-        self.request.session['cart'] = self.cart
-        
+        self.request.session['cart'] = self.cart        
         self.request.session.save()
         
+        messages.success(
+            self.request,
+            'Your registration was created/updated successfully!'
+        )
+        
+        messages.success(
+            self.request,
+            'You are logged in and you can finalize your purchase!'
+        )
+        
+        return redirect('user:create')
         return self.renderize
 
 class Update(View):
     pass
 
 class Login(View):
-    pass
+    def post(self, *args, **kwargs):
+        
+        username = self.request.POST.get('username')
+        password = self.request.POST.get('password')
+        
+        if not username or not password:
+            messages.error(
+                self.request,
+                'Invalid username/password.'
+            )   
+            return redirect('user:create')     
+        
+        user = authenticate(self.request, username=username, password=password)    
+        
+        if not user:
+            
+            messages.error(
+                self.request,
+                'Invalid username/password.'
+            )   
+            return redirect('user:create')
+            
+        login(self.request, user=user)
+        
+        messages.success(
+            self.request,
+            'You are logged in and you can finalize your purchase!'
+        )
+        
+        return redirect('product:cart')
 
 class Logout(View):
-    pass
+    def get(self, *args, **kwargs):
+        cart = copy.deepcopy(self.request.session.get('cart'))
+        
+        logout(self.request)
+        
+        self.request.session['cart'] = cart
+        self.request.session.save()
+        
+        return redirect('product:list')
