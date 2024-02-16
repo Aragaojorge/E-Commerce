@@ -3,6 +3,7 @@ from django.views.generic import ListView
 from django.views import View
 from django.http import HttpResponse
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 import copy
 
 from . import models
@@ -25,7 +26,7 @@ class BaseProfile(View):
             
             self.context = {        
                 'userform': forms.UserForm(data=self.request.POST or None, user=self.request.user, instance=self.request.user),
-                'profileform' : forms.ProfileForm(data=self.request.POST or None)
+                'profileform' : forms.ProfileForm(data=self.request.POST or None, instance=self.profile)
             }
         else:
             self.context = {        
@@ -35,6 +36,9 @@ class BaseProfile(View):
             
         self.userform = self.context['userform']
         self.profileform = self.context['profileform']
+        
+        if self.request.user.is_authenticated:
+            self.template_name = 'user/update.html'
             
         self.renderize = render(self.request, self.template_name, self.context)
         
@@ -68,6 +72,16 @@ class Create(BaseProfile):
             user.last_name = last_name
             
             user.save()
+            
+            if not self.profile:
+                self.profileform.cleaned_data['user'] = user
+                profile = models.User(**self.profileform.cleaned_data)
+                profile.save()
+                
+            else:
+                profile = self.profileform.save(commit=False)
+                profile.user = user
+                profile.save()
         
         # New user
         else:
@@ -78,6 +92,16 @@ class Create(BaseProfile):
             profile = self.profileform.save(commit=False)
             profile.user = user
             profile.save()
+            
+        if password:
+            authenticaty = authenticate(
+                self.request,
+                username=user,
+                password=password
+            )
+            
+            if authenticaty:
+                login(self.request, user=user)
             
         self.request.session['cart'] = self.cart
         

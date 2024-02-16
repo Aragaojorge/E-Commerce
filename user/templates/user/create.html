@@ -1,35 +1,37 @@
-{% extends 'static/base.html' %}
+{% extends "static/base.html" %}
 
 {% load crispy_forms_tags %}
 
 {% block content %}
+<div class="row">
 
-    <div class="row">
-
+    {% if not request.user.is_authenticated %}
         <div class="col-lg">
 
             <h1>Login</h1>
 
         </div>
+    {% endif %}
 
-        <div class="col-lg">
+    <div class="col-lg">
 
+        {% block registertitle  %}
             <h1>Register</h1>
+        {% endblock  %}
+        <form method="POST" action="">
+            {% csrf_token %} 
+            {{ userform|crispy }}
+            {{ profileform|crispy }}
 
-            <form method="POST" action="">
-                {% csrf_token %} 
-                {{ userform|crispy }}
-                {{ profileform|crispy }}
-
-                <div class="row">
-                    <div class="col">
-                        <button type="submit" class="btn btn-primary btn-block btn-lg">Send</button>
-                    </div>
+            <div class="row">
+                <div class="col">
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Send</button>
                 </div>
-            </form>
-
-        </div>
+            </div>
+        </form>
 
     </div>
 
-{% endblock %}
+</div>
+
+{% endblock  %}
