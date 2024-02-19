@@ -1,3 +1,5 @@
+from typing import Any
+from django.db.models.query import QuerySet
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
@@ -7,6 +9,7 @@ from . import models
 from django.contrib import messages
 from pprint import pprint
 from user.models import User
+from django.db.models import Q
 
 # Create your views here.
 class ProductsList(ListView):
@@ -177,3 +180,23 @@ class PurchaseSummary(View):
         }
                 
         return render(self.request, 'product/purchasesummary.html', context) 
+
+class Search(ProductsList):
+    def get_queryset(self, *args, **kwargs):
+        term = self.request.GET.get('term') or self.request.session['term']
+        qs = super().get_queryset(*args, **kwargs)
+        
+        if not term:        
+            return qs
+        
+        self.request.session['term'] = term
+        
+        qs = qs.filter(
+            Q(name__icontains=term) |
+            Q(short_description__icontains=term) |
+            Q(long_description__icontains=term)
+        )
+        
+        self.request.session.save()
+        
+        return qs
