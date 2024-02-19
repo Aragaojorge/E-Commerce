@@ -56,8 +56,17 @@ class User(models.Model):
     def clean(self):
         error_messages = {}
         
+        ssn_sent = self.ssn or None
+        ssn_saved = None
+        user = User.objects.filter(ssn=ssn_sent).first()
+        if user:
+            ssn_saved = user.ssn
+            
+            if ssn_saved is not None and self.pk != user.pk:
+                error_messages['ssn'] = 'SSN already exists!'
+        
         if not validate_ssn(self.ssn):
-            error_messages['ssn'] = 'Enter a valid SSN'
+            error_messages['ssn'] = 'Enter a valid SSN.'
             
         if re.search(r'[^0-9]', self.zipcode) or len(self.zipcode) < 8:
             error_messages['zipcode'] = 'Enter a valid zipcode - type the 8 zipcode numbers!'
