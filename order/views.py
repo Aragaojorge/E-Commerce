@@ -1,14 +1,37 @@
-from django.shortcuts import render, redirect
-from django.views.generic import ListView
+from typing import Any
+from django.db.models.query import QuerySet
+from django.shortcuts import render, redirect, reverse
+from django.views.generic import ListView, DetailView
 from django.views import View
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.contrib import messages
 from product.models import Option
 from utils import utils
 from .models import Order, ItemOrder
 
-# Create your views here.
-class Pay(View):
+# If not loggeg in, it goes to create user
+class DispachLoginRequired(View):
+    def dispatch(self, *args, **kwargs):
+        if not self.request.user.is_authenticated:
+            return redirect('user:create')
+        return super().dispatch(*args, **kwargs)
+        
+    
+class Pay(DispachLoginRequired, DetailView):
+    template_name = 'order/pay.html'
+    model = Order
+    pk_url_kwarg = 'pk'
+    context_object_name = 'order'
+    
+    # Access only your own orders, avoiding access others user orders
+    def get_queryset(self, *args, **kwargs):
+        qs = super().get_queryset(*args, **kwargs)
+        qs = qs.filter(user=self.request.user)
+        
+        return qs
+    
+
+class SaveOrder(View):
     
     template_name = 'order/pay.html'
     
@@ -31,7 +54,7 @@ class Pay(View):
         cart = self.request.session.get('cart')
         cart_option_ids = [v for v in cart]
         db_options = list(
-            Option.objects.select_related('product').filter(id_in=cart_option_ids)
+            Option.objects.select_related('product').filter(id__in=cart_option_ids)
         )
         print(db_options)
         for option in db_options:
@@ -48,7 +71,7 @@ class Pay(View):
                 cart[vid]['price_quantitative'] = stock * price_unit
                 cart[vid]['price_quantitative_promotional'] = stock * price_unit_promo
                 
-                error_msg_stock = 'Insufficiente stock for some product in your cart'\
+                error_msg_stock = 'Insufficiente stock for some product in your cart. '\
                                   'We reduce the amoutn of those products. Please, check which product were affected!'
 
             if error_msg_stock:
@@ -76,7 +99,7 @@ class Pay(View):
                 order=order,
                 product=v['product_name'],
                 product_id=v['product_id'],
-                option=v['option_name'],
+                option=v['option'],
                 id_order=v['option_id'],
                 price=v['price_quantitative'],
                 price_promotional=v['price_quantitative_promotional'],
@@ -87,10 +110,14 @@ class Pay(View):
         ])
             
         del self.request.session['cart']
-        return redirect('order:list')
-    
-class SaveOrder(View):
-    pass
+        return redirect(
+            reverse(
+                'order:pay',
+                kwargs={
+                    'pk': order.pk
+                }
+            )
+        )
 
 class Detail(View):
     pass
