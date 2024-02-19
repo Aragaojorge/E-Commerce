@@ -10,25 +10,25 @@ from utils import utils
 from .models import Order, ItemOrder
 
 # If not loggeg in, it goes to create user
-class DispachLoginRequired(View):
+class DispachLoginRequiredMixin(View):
     def dispatch(self, *args, **kwargs):
         if not self.request.user.is_authenticated:
             return redirect('user:create')
         return super().dispatch(*args, **kwargs)
-        
-    
-class Pay(DispachLoginRequired, DetailView):
-    template_name = 'order/pay.html'
-    model = Order
-    pk_url_kwarg = 'pk'
-    context_object_name = 'order'
     
     # Access only your own orders, avoiding access others user orders
     def get_queryset(self, *args, **kwargs):
         qs = super().get_queryset(*args, **kwargs)
         qs = qs.filter(user=self.request.user)
         
-        return qs
+        return qs  
+    
+class Pay(DispachLoginRequiredMixin, DetailView):
+    template_name = 'order/pay.html'
+    model = Order
+    pk_url_kwarg = 'pk'
+    context_object_name = 'order'
+
     
 
 class SaveOrder(View):
@@ -119,9 +119,15 @@ class SaveOrder(View):
             )
         )
 
-class Detail(View):
-    pass
+class Detail(DispachLoginRequiredMixin, DetailView):
+    model = Order
+    context_object_name = 'order'
+    template_name = 'order/detail.html'
+    pk_url_kwarg = 'pk'
 
-class List(View):
-    def get(self, *args, **kwargs):
-        return HttpResponse('List')
+class List(DispachLoginRequiredMixin, ListView):
+    model = Order
+    context_object_name = 'orders'
+    template_name = 'order/list.html'
+    paginate_by = 10
+    ordering = ['-id']
